@@ -2,6 +2,7 @@ import os
 import argparse
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
+from twilio.twiml.voice_response import VoiceResponse, Say
 import redis
 import logging
 import requests
@@ -75,6 +76,29 @@ class VoiceCallHandler:
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
         return False, str(e)
+
+
+    def get_call_twiml(self, message=None):
+        """
+        TwiML (the Twilio Markup Language) is a set of instructions you can use
+        to tell Twilio what to do when you receive an incoming call or SMS.
+        """
+        response = VoiceResponse()
+        
+        if message:
+            response.say(message, voice='alice')
+        
+        else:
+            response.say("Please leave a message after the tone. Press # when finished.", voice='alice')
+
+        response.record(
+            timeout=10,
+            max_length=60,
+            finish_on_key='#',
+            action=f"{self.webhook_url}handle-recording/"
+        )
+        
+        return str(response)
 
 
 def main():
