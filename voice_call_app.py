@@ -2,7 +2,9 @@ import os
 import argparse
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
+import redis
 import logging
+import requests
 
 
 logging.basicConfig(
@@ -18,24 +20,63 @@ class VoiceCallHandler:
         self.twilio_number = os.environ['TWILIO_PHONE_NUMBER']
         if not all([self.account_sid, self.auth_token, self.twilio_number]):
             raise ValueError("Missing required Twilio credentials in .env file")
+        
+        if not all([self.account_sid, self.auth_token]):
+            raise ValueError("Missing Twilio credentials. Please provide account_sid, auth_token, and from_number.")
+
         self.client = Client(self.account_sid, self.auth_token)
 
-    def initiate_call(self, to_number):
+        self.webhook_url = os.environ.get('WEBHOOK_URL', 'http://demo.twilio.com/docs/voice.xml')
+
+        self.redis_client = redis.Redis(
+            host=os.environ['REDIS_HOST'],
+            port=os.environ['REDIS_PORT'],
+            db=os.environ['REDIS_db'],
+            decode_responses=os.environ['REDIS_DECODE_RESPONSE']
+        )
+        logger.info("Connected to Redis.")
+
+    def store_message(self, message):
+        message_id = f"msg_{self.redis_client.incr('message_counter')}"
+
+        self.redis_client.set(message_id, message)
+        logger.info(f"Message stored in Redis with ID: {message_id}")
+        
+        return message_id
+
+    def retrieve_message(self, message_id):
+        message = self.redis_client.get(message_id)
+        if message:
+            logger.info(f"Retrieved message from Redis: {message_id}")
+            return message
+        logger.warning(f"Message not found in Redis: {message_id}")
+        return None
+
+
+    def initiate_call(self, to_number, message):
         try:
+            if message:
+                message_id = self.store_message(message)
+                webhook_url = f'https://d806-156-209-77-128.ngrok-free.app/{self.webhook_url}?message_id={message_id}'
+
             call = self.client.calls.create(
                 to=to_number,
                 from_=self.twilio_number,
-                url='http://demo.twilio.com/docs/voice.xml',
-                record=True
+                url=webhook_url if message else self.webhook_url,
+                record=True,
+                recording_channels='mono',
+                recording_status_callback=f"{self.webhook_url}recording-status/"
             )
-            return True, call.sid
+            return True, call.sid, call.status
+
         except TwilioRestException as e:
             logger.error(f"Twilio error: {str(e)}")
             return False, str(e)
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
         return False, str(e)
-    
+
+
 def main():
     parser = argparse.ArgumentParser(description='Voice Call App')
     parser.add_argument('-n', '--number', required=True, help='Recipient phone number (include country code)')
@@ -45,12 +86,17 @@ def main():
 
     try:
         handler = VoiceCallHandler()
-        success, result = handler.initiate_call(args.number)
+        handler.initiate_call(args.number, args.message)
+        if args.message:
+            success, call_sid, call_status = handler.initiate_call(args.number, args.message)
+        else:
+            success, call_sid, call_status = handler.initiate_call(args.number)
 
         if success:
-            print(f"Call initiated successfully! Call SID: {result}")
+            print(f"Call initiated successfully! Call SID: {call_sid}")
+            print(f"Call status is: {call_status}")
         else:
-            print(f"Failed to initiate call: {result}")
+            print(f"Failed to initiate call: {call_sid}")
     except Exception as e:
         print(f"Application error: {str(e)}")
 
