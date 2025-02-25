@@ -2,10 +2,9 @@ import os
 import argparse
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
-from twilio.twiml.voice_response import VoiceResponse, Say
+from twilio.twiml.voice_response import VoiceResponse
 import redis
 import logging
-import requests
 
 
 logging.basicConfig(
@@ -20,10 +19,7 @@ class VoiceCallHandler:
         self.auth_token = os.environ['TWILIO_AUTH_TOKEN']
         self.twilio_number = os.environ['TWILIO_PHONE_NUMBER']
         if not all([self.account_sid, self.auth_token, self.twilio_number]):
-            raise ValueError("Missing required Twilio credentials in .env file")
-        
-        if not all([self.account_sid, self.auth_token]):
-            raise ValueError("Missing Twilio credentials. Please provide account_sid, auth_token, and from_number.")
+            raise ValueError("Missing required Twilio credentials.")
 
         self.client = Client(self.account_sid, self.auth_token)
 
@@ -59,15 +55,13 @@ class VoiceCallHandler:
             if message:
                 message_id = self.store_message(message)
                 webhook_url = f'https://d806-156-209-77-128.ngrok-free.app/{self.webhook_url}?message_id={message_id}'
-                requests.post(webhook_url)
 
             call = self.client.calls.create(
                 to=to_number,
                 from_=self.twilio_number,
                 url=webhook_url if message else f'https://d806-156-209-77-128.ngrok-free.app/{self.webhook_url}',
                 record=True,
-                recording_channels='mono',
-                recording_status_callback=f"{self.webhook_url}recording-status/"
+                recording_channels='mono'
             )
             return True, call.sid, call.status
 
@@ -87,17 +81,16 @@ class VoiceCallHandler:
         response = VoiceResponse()
         
         if message:
-            response.say(message, voice='alice')
+            response.say(message, voice='man')
             response.pause(length=1)
 
-        response.say("Please leave a message after the tone. Press # when finished.", voice='alice')
+        response.say("Please leave a message after the tone. Press # when finished.", voice='man')
         response.record(
             timeout=10,
             max_length=60,
             finish_on_key='#',
-            action=f"{self.webhook_url}handle-recording/"
+            action=f"https://d806-156-209-77-128.ngrok-free.app/{self.webhook_url}handle-recording/"
         )
-        
         return str(response)
 
 
@@ -108,9 +101,6 @@ class VoiceCallHandler:
         recording = self.client.recordings(recording_sid).fetch()
         
         print(f"Message recorded successfully")
-        print(f"Recording SID: {recording.sid}")
-        print(f"Recording URL: {recording.uri}")
-        print(f"Recording Duration: {recording.duration} seconds")
         
         return {
             'sid': recording.sid,
@@ -128,7 +118,6 @@ def main():
 
     try:
         handler = VoiceCallHandler()
-        handler.initiate_call(args.number, args.message)
         if args.message:
             success, call_sid, call_status = handler.initiate_call(args.number, args.message)
         else:
