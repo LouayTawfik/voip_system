@@ -4,5 +4,6 @@ from . import views
 app_name = 'call_handler'
 
 urlpatterns = [
-    path('recording-complete',)
+    path('', views.voice_webhook, name='voice_webhook'),
+    path('handle-recording/', views.handle_recording, name='handle_recording')
 ]
