@@ -103,12 +103,6 @@ class VoiceCallHandler:
     def handle_recording_completed(self, recording_sid):
         """
         Handle the callback when recording is completed.
-        
-        Args:
-            recording_sid (str): SID of the recording
-            
-        Returns:
-            dict: Recording details
         """
         recording = self.client.recordings(recording_sid).fetch()
         
