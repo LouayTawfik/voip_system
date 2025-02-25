@@ -87,10 +87,9 @@ class VoiceCallHandler:
         
         if message:
             response.say(message, voice='alice')
-        
-        else:
-            response.say("Please leave a message after the tone. Press # when finished.", voice='alice')
+            response.pause(length=1)
 
+        response.say("Please leave a message after the tone. Press # when finished.", voice='alice')
         response.record(
             timeout=10,
             max_length=60,
@@ -99,6 +98,30 @@ class VoiceCallHandler:
         )
         
         return str(response)
+
+
+    def handle_recording_completed(self, recording_sid):
+        """
+        Handle the callback when recording is completed.
+        
+        Args:
+            recording_sid (str): SID of the recording
+            
+        Returns:
+            dict: Recording details
+        """
+        recording = self.client.recordings(recording_sid).fetch()
+        
+        print(f"Message recorded successfully")
+        print(f"Recording SID: {recording.sid}")
+        print(f"Recording URL: {recording.uri}")
+        print(f"Recording Duration: {recording.duration} seconds")
+        
+        return {
+            'sid': recording.sid,
+            'url': recording.uri,
+            'duration': recording.duration
+        }
 
 
 def main():
