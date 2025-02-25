@@ -13,7 +13,7 @@ A Python-based voice call streaming application that enables two-way communicati
 ## Technologies Used
 
 - Python 3.10+
-- Django 5.1+
+- Django 5.1
 - Twilio API for voice calls
 
 
