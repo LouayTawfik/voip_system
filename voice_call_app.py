@@ -59,11 +59,12 @@ class VoiceCallHandler:
             if message:
                 message_id = self.store_message(message)
                 webhook_url = f'https://d806-156-209-77-128.ngrok-free.app/{self.webhook_url}?message_id={message_id}'
+                requests.post(webhook_url)
 
             call = self.client.calls.create(
                 to=to_number,
                 from_=self.twilio_number,
-                url=webhook_url if message else self.webhook_url,
+                url=webhook_url if message else f'https://d806-156-209-77-128.ngrok-free.app/{self.webhook_url}',
                 record=True,
                 recording_channels='mono',
                 recording_status_callback=f"{self.webhook_url}recording-status/"
@@ -75,7 +76,7 @@ class VoiceCallHandler:
             return False, str(e)
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
-        return False, str(e)
+            return False, str(e)
 
 
     def get_call_twiml(self, message=None):
