@@ -57,7 +57,7 @@ Use the voice_call_app.py script to initiate a call:
 python voice_call_app.py +15551234567
 
 # Providing a custom message
-python call_handler.py -n +15551234567 -m "Hello, this is a test message."
+python voice_call_app.py -n +15551234567 -m "Hello, this is a test message."
 
 
 ## Command-line Arguments
