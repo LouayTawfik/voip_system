@@ -54,7 +54,7 @@ A Python-based voice call streaming application that enables two-way communicati
 ## Making Call
 Use the voice_call_app.py script to initiate a call:
 # Basic usage with just a phone number
-python call_handler.py +15551234567
+python voice_call_app.py +15551234567
 
 # Providing a custom message
 python call_handler.py -n +15551234567 -m "Hello, this is a test message."
