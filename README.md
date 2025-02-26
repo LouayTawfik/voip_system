@@ -35,18 +35,22 @@ A Python-based voice call streaming application that enables two-way communicati
    cd voip_system
 
 2. Create and activate a virtual environment:
+   ```
    python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-3. Install dependencies:
-  pip install -r requirements.txt
+4. Install dependencies:
+   ```
+    pip install -r requirements.txt
 
-4. Configure environment variables:
+6. Configure environment variables:
+   ```
    export TWILIO_ACCOUNT_SID="your_account_sid"
    export TWILIO_AUTH_TOKEN="your_auth_token"
    export TWILIO_PHONE_NUMBER="your_twilio_number"
 
-5. Apply database migrations:
+8. Apply database migrations:
+   ```
    python3 manage.py migrate
 
 
